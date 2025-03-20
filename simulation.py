@@ -7,7 +7,7 @@ from stable_baselines3.common.env_util import DummyVecEnv
 from training_march import CargoBalancingEnv
 
 #Load and test trained model
-model_path = "/home/aayush/Documents/RL_Training/models/1742161112/400000"  # Modify this to the correct path
+model_path = "/home/aayush/Documents/RL_Training/models/1742446364/200000"  # Modify this to the correct path
 # Load the trained PPO model
 model = PPO.load(model_path)
 
@@ -23,10 +23,10 @@ while True:
     print("Observation shape:", obs.shape)
     print("Observation:", obs)
     #lookahead = org_env.get_lookahead_waypoint()
-    waypoint = org_env.get_waypoint()
+    # waypoint = org_env.get_waypoint()
 
-    #print("lookahead:", lookahead)
-    print("current waypoint:", waypoint)
+    # #print("lookahead:", lookahead)
+    # print("current waypoint:", waypoint)
     # x = obs[0][0]
     # y = obs[0][1]
     # vx = obs[0][2]

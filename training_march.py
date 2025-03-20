@@ -52,7 +52,7 @@ class CargoBalancingEnv(gym.Env):
         #cargo initial pose
         self.initial_cx = 1.05120351e-05
         self.initial_cy = -5.81037754e-10 
-        self.initial_cz = 1.34967297e+00
+        self.initial_cz = 2.34967297e+00
         self.initial_yaw = 0  
         self.time_step = 0
         self.state_history = []
@@ -204,6 +204,7 @@ class CargoBalancingEnv(gym.Env):
         # self.state_history = []
         self.state = np.array(self.state, dtype=np.float32)
         
+        time.sleep(2)
   #      self.trajectory = []  # Reset trajectory
         # print(f"State shape in reset(): {self.state.shape}")
         return self.state, {}
