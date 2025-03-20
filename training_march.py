@@ -134,8 +134,6 @@ class CargoBalancingEnv(gym.Env):
         path_length = np.linalg.norm([(start_x - end_x), (start_y - end_y)])
         vehicle_heading = self.state[2]
         heading_error = np.abs(vehicle_heading - heading)
-        lookahead_heading_error = np.abs(vehicle_heading - target_heading)
-        total_heading = heading_error + lookahead_heading_error
         goal_proximity = np.linalg.norm([(self.state[0] - end_x),(self.state[1] - end_y) ])
         max_deviation = 3
         max_velocity = 15
@@ -145,6 +143,8 @@ class CargoBalancingEnv(gym.Env):
         reward = 0
         velocity = np.linalg.norm([self.state[3], self.state[4]])
         if lookahead is not None or target_heading is not None or lookahead_distance is not None:
+            lookahead_heading_error = np.abs(vehicle_heading - target_heading)
+            total_heading = heading_error + lookahead_heading_error
             centering_factor = max(1.0 - lateral_distance / max_deviation, 0.0)
             angle_factor = max(1.0 - abs(total_heading / np.deg2rad(30)), 0.0)
             #cargo falling off penalty
