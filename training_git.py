@@ -149,37 +149,57 @@ class CargoBalancingEnv(gym.Env):
             angle_factor = max(1.0 - abs(total_heading / np.deg2rad(30)), 0.0)
             
             #Reward for approaching goal
-            if goal_proximity != 0:
-                reward = ((0.01*path_length) - goal_proximity)/path_length 
-            #cargo falling off penalty
+            
             if  self.state[7] < 1.2:
                 reward = -30
-            #Penalty for large lookahead
-            if lookahead_distance > 0.1:
-                reward = -10
-            #Lateral deviation penalty
-            if lateral_distance > max_deviation:
-                reward = -((lateral_distance-max_deviation)/max_deviation + 5)
-            else:
-                reward = 5*((max_deviation-lateral_distance)/max_deviation)
-            #Penalty for episode limit too long
-            if self.episode_start + SECONDS_PER_EPISODE < time.time():
+                done = True
+            elif lateral_distance > 0:
+                # done = True
+                reward = -lateral_distance*10
+            elif lateral_distance > max_deviation:
                 reward = -50
-            #Penalty for 0 Velocity    
-            if self.state[3] <= 0:
-                reward = -40
-            #Penalty for speed
-            if velocity < min_velocity:
-                reward = -(velocity / min_velocity) * centering_factor * angle_factor
-            elif velocity > target_velocity:
-                reward = (1.0 - (velocity-target_velocity) / (max_velocity-target_velocity)) * centering_factor * angle_factor
+                done = True
+            elif self.episode_start + SECONDS_PER_EPISODE < time.time():
+                reward = -10
+                done = True
             elif velocity > max_velocity:
                 reward = -10
-            # elif velocity < min_velocity:
-            #     reward = reward - 300
+                done = True
+            #cargo falling off penalty
+            if not done:
+                if goal_proximity > 0.1:
+                    reward = -10
+                if velocity < min_velocity:
+                    reward = (velocity / min_velocity) * centering_factor * angle_factor
+                elif self.state[3] < 0:
+                    reward = -10
+                else:
+                    reward = centering_factor*angle_factor
+            else: 
+                reward = centering_factor*angle_factor
+         
+            #Penalty for large lookahead
+            # if lookahead_distance > 0.1:
+            #     reward = -10
+            # #Lateral deviation penalty
+            
+            # else:
+            #     reward = 5*((max_deviation-lateral_distance)/max_deviation)
+            # #Penalty for episode limit too long
+            
+            # #Penalty for 0 Velocity    
+            # if self.state[3] <= 0:
+            #     reward = -40
+            # #Penalty for speed
+            
+            # elif velocity > target_velocity:
+            #     reward = (1.0 - (velocity-target_velocity) / (max_velocity-target_velocity)) * centering_factor * angle_factor
+            
+            # # elif velocity < min_velocity:
+            # #     reward = reward - 300
         else:
             if lateral_distance < max_deviation:
-                reward += 50
+                reward = 10
                 print("Goal Reached")
                 done = True
 
@@ -232,7 +252,7 @@ class CargoBalancingEnv(gym.Env):
     def save_state_history(self, file_path="state_history.csv"):
     # ✅ Save state history to CSV
         df = pd.DataFrame(self.state_history, columns=[
-            'Vehicle X', 'Vehicle Y', 'Vehicle_Yaw' 'Velocity X', 'Velocity Y',
+            'Vehicle X', 'Vehicle Y', 'Vehicle_Yaw', 'Velocity X', 'Velocity Y',
             'Cargo X', 'Cargo Y', 'Cargo Z'
         ])
         df.to_csv(file_path, index=False)

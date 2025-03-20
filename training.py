@@ -2,7 +2,7 @@ from stable_baselines3 import PPO #PPO
 from stable_baselines3.common.env_util import DummyVecEnv
 from stable_baselines3.common.callbacks import BaseCallback
 import os
-from training_march import CargoBalancingEnv
+from training_git import CargoBalancingEnv
 import time
 
 # class StopTrainingOnGoalCallback(BaseCallback):
@@ -36,20 +36,20 @@ if not os.path.exists(logdir):
 	os.makedirs(logdir)
 
 print('connecting to env..')
-org_env =  CargoBalancingEnv("/home/aayush/Documents/RL_Training/rover_scaled.xml", render_mode="human")
+org_env =  CargoBalancingEnv("./rover_scaled.xml", render_mode="human")
 # env = CargoBalancingEnv()
 env = DummyVecEnv([lambda: org_env])
 
 env.reset()
 print('Env has been reset as part of launch')
-model = PPO('MlpPolicy', env, verbose=1, ent_coef=0.01, tensorboard_log=logdir)
+model = PPO('MlpPolicy', env, verbose=1, ent_coef=0.005, tensorboard_log=logdir, seed=SEED)
 
-TIMESTEPS = 100000 # how long is each training iteration - individual steps
+TIMESTEPS = 50000 # how long is each training iteration - individual steps
 iters = 0
 # goal_reached = False
 # goal_position = env.goal_position
 # print(f"Goal position: {goal_position}")
-while iters<4 :  # how many training iterations you want
+while iters<5 :  # how many training iterations you want
 	iters += 1
 	print('Iteration ', iters,' is to commence...')
 	model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name=f"PPO" )

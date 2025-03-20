@@ -9,11 +9,11 @@ class VehicleController:
         # Generate random waypoints
         np.random.seed(42)  # For reproducibility
         #self.waypoints = np.cumsum(np.random.rand(20, 2) * 5, axis=0)
-        waypoint_file="/home/aayush/Documents/RL_Training/s_shaped_waypoints.csv"
+        waypoint_file="./s_shaped_waypoints.csv"
         waypoints_df = pd.read_csv(waypoint_file)
         self.waypoints = waypoints_df[['x', 'y']].to_numpy()
 
-        self.state = [100.0, 5, 2.0, 0.5]  # x, y, vx, vy
+        self.state = [170.0, 50, 2.0, 0.5]  # x, y, vx, vy
         self.current_waypoint_index = 0
 
     def create_curve_from_waypoints(self):
@@ -75,7 +75,7 @@ class VehicleController:
         # Sum up the distances to get the total length
         total_length = np.sum(distances)
         
-        return total_length
+        return total_length , distances
 
 # Example usage:
 # Assuming 'controller' is an instance of the class containing the method
@@ -85,7 +85,7 @@ controller = VehicleController()
 
 # Create spline from waypoints
 controller.create_curve_from_waypoints()
-spline_length = controller.calculate_spline_length()
+spline_length, distances = controller.calculate_spline_length()
 print(f"Spline length: {spline_length}")
 
 # Get lookahead waypoint
