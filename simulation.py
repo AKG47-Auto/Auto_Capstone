@@ -7,7 +7,7 @@ from stable_baselines3.common.env_util import DummyVecEnv
 from training_git import CargoBalancingEnv
 
 #Load and test trained model
-model_path = "./models/1742504818/250000"  # Modify this to the correct path
+model_path = "./models/1742621613/250000"  # Modify this to the correct path
 # Load the trained PPO model
 model = PPO.load(model_path)
 

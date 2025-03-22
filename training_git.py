@@ -56,6 +56,24 @@ class CargoBalancingEnv(gym.Env):
         self.initial_yaw = 0  
         self.time_step = 0
         self.state_history = []
+
+        self.prev_lat_error = 0
+        self.cumulative_lat_error = 0
+        
+        # Initialize PID state for heading error
+        self.prev_heading_error = 0
+        self.cumulative_heading_error = 0
+        
+        # PID gains (can be tuned)
+        self.Kp_lat = 1.0
+        self.Ki_lat = 0.8
+        self.Kd_lat = 0.05
+
+        self.Kp_head = 1.0
+        self.Ki_head = 0.5
+        self.Kd_head = 0.05
+
+
                 
     def create_curve_from_waypoints(self):
         x = self.waypoints[:, 0]
@@ -142,9 +160,29 @@ class CargoBalancingEnv(gym.Env):
         done = False
         reward = 0
         velocity = np.linalg.norm([self.state[3], self.state[4]])
+
+        lat_error = lateral_distance
+        lat_p = self.Kp_lat * lat_error
+        self.cumulative_lat_error += lat_error
+        lat_i = self.Ki_lat * self.cumulative_lat_error
+        lat_d = self.Kd_lat * (lat_error - self.prev_lat_error)
+
+        #heading_error = total_heading
+        head_p = self.Kp_head * heading_error
+        self.cumulative_heading_error += heading_error
+        head_i = self.Ki_head * self.cumulative_heading_error
+        head_d = self.Kd_head * (heading_error - self.prev_heading_error)
+
+        self.prev_lat_error = lat_error
+        self.prev_heading_error = heading_error   
+        max_heading_deviation = np.deg2rad(30)  
+
+
+
         if all(v is not None for v in [lookahead, target_heading, lookahead_distance]):
             lookahead_heading_error = np.abs(vehicle_heading - target_heading)
             total_heading = heading_error + lookahead_heading_error
+
             centering_factor = max(1.0 - lateral_distance / max_deviation, 0.0)
             angle_factor = max(1.0 - abs(total_heading / np.deg2rad(30)), 0.0)
             
@@ -153,9 +191,9 @@ class CargoBalancingEnv(gym.Env):
             if  self.state[7] < 1.2:
                 reward = -30
                 done = True
-            elif lateral_distance > 0:
-                # done = True
-                reward = -lateral_distance*10
+            # elif lateral_distance > 0:
+            #     # done = True
+            #     reward = -100
             elif lateral_distance > max_deviation:
                 reward = -50
                 done = True
@@ -167,12 +205,18 @@ class CargoBalancingEnv(gym.Env):
                 done = True
             #cargo falling off penalty
             if not done:
+                if lat_i > max_deviation:
+                    reward = -50
+                else:
+                    reward = +10
                 if goal_proximity > 0.1:
                     reward = -10
                 if velocity < min_velocity:
                     reward = (velocity / min_velocity) * centering_factor * angle_factor
                 elif self.state[3] < 0:
                     reward = -10
+                # elif head_i < max_heading_deviation:
+                #     reward = -20
                 else:
                     reward = centering_factor*angle_factor
             else: 
@@ -204,6 +248,7 @@ class CargoBalancingEnv(gym.Env):
                 done = True
 
         # print(f"State shape in step(): {self.state.shape}")
+        #print(f"Reward: {reward}, Done: {done}")
         return self.state, reward, done, done, {}
     
     def reset(self, seed=SEED, options=None):
