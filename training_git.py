@@ -66,7 +66,7 @@ class CargoBalancingEnv(gym.Env):
         
         # PID gains (can be tuned)
         self.Kp_lat = 1.0
-        self.Ki_lat = 0.8
+        self.Ki_lat = 5
         self.Kd_lat = 0.05
 
         self.Kp_head = 1.0
@@ -187,23 +187,6 @@ class CargoBalancingEnv(gym.Env):
             angle_factor = max(1.0 - abs(total_heading / np.deg2rad(30)), 0.0)
             
             #Reward for approaching goal
-            
-            if  self.state[7] < 1.2:
-                reward = -30
-                done = True
-            # elif lateral_distance > 0:
-            #     # done = True
-            #     reward = -100
-            elif lateral_distance > max_deviation:
-                reward = -50
-                done = True
-            elif self.episode_start + SECONDS_PER_EPISODE < time.time():
-                reward = -10
-                done = True
-            elif velocity > max_velocity:
-                reward = -10
-                done = True
-            #cargo falling off penalty
             if not done:
                 if lat_i > max_deviation:
                     reward = -50
@@ -221,6 +204,40 @@ class CargoBalancingEnv(gym.Env):
                     reward = centering_factor*angle_factor
             else: 
                 reward = centering_factor*angle_factor
+            
+            if  self.state[7] < 1.2:
+                reward = -30
+                done = True
+            # elif lateral_distance > 0:
+            #     # done = True
+            #     reward = -100
+            elif lateral_distance > max_deviation:
+                reward = -50
+                done = True
+            elif self.episode_start + SECONDS_PER_EPISODE < time.time():
+                reward = -1
+                # done = True
+            elif velocity > max_velocity:
+                reward = -10
+                done = True
+            #cargo falling off penalty
+            # if not done:
+            #     if lat_i > max_deviation:
+            #         reward = -50
+            #     else:
+            #         reward = +10
+            #     if goal_proximity > 0.1:
+            #         reward = -10
+            #     if velocity < min_velocity:
+            #         reward = (velocity / min_velocity) * centering_factor * angle_factor
+            #     elif self.state[3] < 0:
+            #         reward = -10
+            #     # elif head_i < max_heading_deviation:
+            #     #     reward = -20
+            #     else:
+            #         reward = centering_factor*angle_factor
+            # else: 
+            #     reward = centering_factor*angle_factor
          
             #Penalty for large lookahead
             # if lookahead_distance > 0.1:
@@ -242,7 +259,7 @@ class CargoBalancingEnv(gym.Env):
             # # elif velocity < min_velocity:
             # #     reward = reward - 300
         else:
-            if lateral_distance < max_deviation:
+            if goal_proximity < 0.1:
                 reward = 10
                 print("Goal Reached")
                 done = True
