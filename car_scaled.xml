@@ -1,0 +1,63 @@
+<mujoco>
+  <compiler autolimits="true"/>
+  
+  <asset>
+    <texture name="grid" type="2d" builtin="checker" width="512" height="512" 
+             rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>
+    <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
+  </asset>
+
+  <default>
+    <joint damping=".03" actuatorfrcrange="-1 1"/>
+    <default class="wheel">
+      <geom type="cylinder" size=".15 .05" rgba=".5 .5 1 1" friction="1 0.1 0.1"/>
+    </default>
+  </default>
+
+  <worldbody>
+    <!-- Ground -->
+    <geom type="plane" size="5 5 .01" material="grid" friction="1 0.1 0.1"/>
+
+    <!-- Car Body -->
+    <body name="car" pos="0 0 .05">
+      <freejoint/>
+      <geom name="chasis" type="box" size="1 0.5 0.02" 
+            pos="0 0 0.05" condim="3" friction="1 0.1 0.1"/>
+      
+      <!-- Front Left Wheel -->
+      <body name="left_wheel" pos="-0.8 0.4 0">
+        <joint name="left" type="hinge" axis="1 0 0" pos="0 0 0"/>
+        <geom class="wheel"/>
+      </body>
+
+      <!-- Front Right Wheel -->
+      <body name="right_wheel" pos="-0.8 -0.4 0">
+        <joint name="right" type="hinge" axis="1 0 0" pos="0 0 0"/>
+        <geom class="wheel"/>
+      </body>
+
+      <!-- Rear Left Wheel -->
+      <body name="rear_left_wheel" pos="0.8 0.4 0">
+        <joint name="rear_left" type="hinge" axis="1 0 0" pos="0 0 0"/>
+        <geom class="wheel"/>
+      </body>
+
+      <!-- Rear Right Wheel -->
+      <body name="rear_right_wheel" pos="0.8 -0.4 0">
+        <joint name="rear_right" type="hinge" axis="1 0 0" pos="0 0 0"/>
+        <geom class="wheel"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <!-- Actuators for driving and steering -->
+  <actuator>
+    <!-- Forward motion (apply to rear wheels) -->
+    <motor name="forward_left" joint="rear_left" ctrlrange="-1 1"/>
+    <motor name="forward_right" joint="rear_right" ctrlrange="-1 1"/>
+
+    <!-- Steering (apply to front wheels) -->
+    <motor name="steer_left" joint="left" ctrlrange="-0.5 0.5"/>
+    <motor name="steer_right" joint="right" ctrlrange="-0.5 0.5"/>
+  </actuator>
+</mujoco>

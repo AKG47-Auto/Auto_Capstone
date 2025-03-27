@@ -2,7 +2,7 @@ from stable_baselines3 import PPO #PPO
 from stable_baselines3.common.env_util import DummyVecEnv
 from stable_baselines3.common.callbacks import BaseCallback
 import os
-from training_git import CargoBalancingEnv
+from SB3_RL_Training import CargoBalancingEnv
 import time
 
 # class StopTrainingOnGoalCallback(BaseCallback):

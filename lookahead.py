@@ -44,7 +44,7 @@ class VehicleController:
         closest_point = (self.x_new[min_index], self.y_smooth[min_index])
         spline_derivative = self.spline.derivative()
         heading = spline_derivative(self.x_new[min_index])
-        looahead_index = min_index + 15
+        looahead_index = min_index + 5
         if looahead_index < len(self.x_new):
             lookahead_point = (self.x_new[looahead_index], self.y_smooth[looahead_index])
             lookahead_heading = spline_derivative(self.x_new[min_index + 15])
