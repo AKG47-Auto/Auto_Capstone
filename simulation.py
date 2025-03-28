@@ -4,10 +4,10 @@ import mujoco
 import mujoco.viewer
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import DummyVecEnv
-from training_git import CargoBalancingEnv
+from SB3_RL_Training import CargoBalancingEnv
 
 #Load and test trained model
-model_path = "./models/1742680950/250000"  # Modify this to the correct path
+model_path = "./models/1743114407/2500000"  # Modify this to the correct path
 # Load the trained PPO model
 model = PPO.load(model_path)
 

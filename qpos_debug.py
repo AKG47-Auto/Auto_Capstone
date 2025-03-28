@@ -4,7 +4,7 @@ import time
 import numpy as np
 
 # Load the MuJoCo model
-model = mujoco.MjModel.from_xml_path("car.xml")  # Replace with your model file
+model = mujoco.MjModel.from_xml_path("rover_scaled.xml")  # Replace with your model file
 data = mujoco.MjData(model)
 
 # Create a viewer (optional, for visualization)

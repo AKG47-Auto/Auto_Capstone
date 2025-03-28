@@ -36,23 +36,37 @@ class VehicleController:
         x_point, y_point = point
         distances = []
         
+        # Compute distances from the point to all spline points
         for x_spline, y_spline in zip(self.x_new, self.y_smooth):
-            dist = np.sqrt((x_spline - x_point)**2 + (y_spline - y_point)**2)
+            dist = np.sqrt((x_spline - x_point) ** 2 + (y_spline - y_point) ** 2)
             distances.append(dist)
         
+        # Find the closest point on the spline
         min_index = np.argmin(distances)
         closest_point = (self.x_new[min_index], self.y_smooth[min_index])
+        
+        # Compute heading using spline derivative
         spline_derivative = self.spline.derivative()
         heading = spline_derivative(self.x_new[min_index])
-        looahead_index = min_index + 5
-        if looahead_index < len(self.x_new):
-            lookahead_point = (self.x_new[looahead_index], self.y_smooth[looahead_index])
-            lookahead_heading = spline_derivative(self.x_new[min_index + 15])
+        
+        # Lookahead point and heading
+        lookahead_index = min_index + 5
+        if lookahead_index < len(self.x_new):
+            lookahead_point = (self.x_new[lookahead_index], self.y_smooth[lookahead_index])
+            lookahead_heading = spline_derivative(self.x_new[lookahead_index])
+            lookahead_distance = np.sqrt((lookahead_point[0] - x_point) ** 2 + (lookahead_point[1] - y_point) ** 2)
         else:
             lookahead_point = None
             lookahead_heading = None
-        lookahead_distance = np.sqrt((lookahead_point[0] - x_point)**2 + (lookahead_point[1] - y_point)**2)
-        return distances[min_index], closest_point, heading , lookahead_point, lookahead_heading , lookahead_distance
+            lookahead_distance = None
+        
+        # Compute remaining spline length from the closest point
+        dx_remaining = np.diff(self.x_new[min_index:])
+        dy_remaining = np.diff(self.y_smooth[min_index:])
+        remaining_spline_length = np.sum(np.sqrt(dx_remaining ** 2 + dy_remaining ** 2))  # Approximate arc length
+
+        return distances[min_index], closest_point, heading, lookahead_point, lookahead_heading, lookahead_distance, remaining_spline_length
+
     
     def calculate_spline_length(self):
         """
@@ -94,7 +108,7 @@ print(f"Spline length: {spline_length}")
 
 # Find shortest distance to spline from a random point
 test_point = (controller.state[0], controller.state[1])
-distance, closest_point, heading, lookahead, target_heading, lookahead_distance = controller.shortest_distance_to_spline(test_point)
+distance, closest_point, heading, lookahead, target_heading, lookahead_distance, remaining_spline = controller.shortest_distance_to_spline(test_point)
 e_cross_track = np.sqrt((closest_point[0] - controller.state[0])**2 + (closest_point[1] - controller.state[1])**2)
 print("lookahead distance", lookahead_distance)
 
@@ -103,6 +117,7 @@ print("Lookahead Waypoint:", lookahead)
 print("Lookahead Heading:", target_heading)
 print("Shortest Distance to Spline:", distance)
 print("Closest Point on Spline:", closest_point)
+print("remaining length:", remaining_spline)
 print("Heading at Closest Point:", heading)
 head = np.arctan(5 * e_cross_track / (5))
 print("arctan:", head)

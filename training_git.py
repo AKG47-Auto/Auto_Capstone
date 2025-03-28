@@ -52,7 +52,7 @@ class CargoBalancingEnv(gym.Env):
         #cargo initial pose
         self.initial_cx = 1.05120351e-05
         self.initial_cy = -5.81037754e-10 
-        self.initial_cz = 2.34967297e+00
+        self.initial_cz = 1.34967297e+00
         self.initial_yaw = 0  
         self.time_step = 0
         self.state_history = []
