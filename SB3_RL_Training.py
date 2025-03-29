@@ -15,10 +15,10 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import make_interp_spline
 
 SEED = 123
-SECONDS_PER_EPISODE = 30
+SECONDS_PER_EPISODE = 100
 
 class CargoBalancingEnv(gym.Env):
-    def __init__(self, xml_file="./rover_scaled.xml", waypoint_file="./straight_line_waypoints.csv", render_mode=None):
+    def __init__(self, xml_file="./rover_scaled.xml", waypoint_file="./curve_line_waypoints.csv", render_mode=None):
         super(CargoBalancingEnv, self).__init__()
         
         # Load MuJoCo model from XML file
@@ -159,6 +159,8 @@ class CargoBalancingEnv(gym.Env):
         self.state[6] = self.data.qpos[17]  # Cargo position in Y axis
         self.state[7] = self.data.qpos[18]  # Cargo position in Z axis
 
+        self.state_history.append(self.state)
+
         test_point = (self.state[0], self.state[1])
         _, lateral_distance, closest_point, heading, remaining_path_length = self.shortest_distance_to_spline(test_point)
         # lookahead, target_heading, lookahead_distance,
@@ -188,6 +190,8 @@ class CargoBalancingEnv(gym.Env):
         sdf = max(1.0 - abs(std/self.max_std), 0.0)
         c_std = np.std(list(self.cargo_deviation_history.queue))
         c_stdf = max(1.0 - abs(c_std/self.max_cstd), 0.0)
+        total_distance = remaining_path_length + lat_error
+        total_distance_factor = max(1.0 - total_distance / (self.total_path_length+10), 0.0)
         speed = np.sqrt(self.state[3]**2 + self.state[4]**2)
         self.speed_accum += speed
         penalty = -10
@@ -195,7 +199,7 @@ class CargoBalancingEnv(gym.Env):
         
         #Check Early Termination
         if not self.early_terminal_state(lat_error, remaining_path_length):
-            reward += self.reward_fn(centering_factor,angle_factor,sdf,c_stdf)
+            reward += self.reward_fn(centering_factor,angle_factor,sdf,c_stdf,total_distance_factor)
         else:
             self.terminal_state = True
             reward += penalty
@@ -222,7 +226,8 @@ class CargoBalancingEnv(gym.Env):
             'average_deviation': avg_lateral_error,
             'total_reward': self.total_reward,
             'avg_speed': (self.speed_accum / self.num_steps),
-            'mean_reward': (self.total_reward / self.num_steps)
+            'mean_reward': (self.total_reward / self.num_steps),
+            'vehicle_x' : self.state[0]
         }
                 
         return self.state, reward, self.terminal_state or self.success_state, self.truncated, info
@@ -282,7 +287,7 @@ class CargoBalancingEnv(gym.Env):
         df.to_csv(file_path, index=False)
         print(f"State history saved to {file_path}")
 
-    def reward_fn(self, centering_factor, angle_factor, sdf, c_stdf):
+    def reward_fn(self, centering_factor, angle_factor, sdf, c_stdf, total_distance_factor):
         # Speed reward
         speed = np.linalg.norm([self.state[3], self.state[4]])
         min_speed = self.min_speed
@@ -295,7 +300,7 @@ class CargoBalancingEnv(gym.Env):
         else:
             speed_reward = 1.0
 
-        reward = speed_reward*centering_factor*angle_factor*sdf*c_stdf
+        reward = speed_reward*centering_factor*angle_factor*sdf*c_stdf*total_distance_factor
 
         return reward
     
@@ -309,9 +314,9 @@ class CargoBalancingEnv(gym.Env):
         if self.state[3] < -1:
             print(f"Early termination: Vehicle moving in reverse. V_x = {self.state[3]}")
             return True
-        if total_distance > (self.total_path_length + 1):
-            print(f"Early termination: Total distance exceeded threshold. total_distance = {total_distance}, threshold = {self.total_path_length}")
-            return True
+        # if total_distance > (self.total_path_length + 1):
+        #     print(f"Early termination: Total distance exceeded threshold. total_distance = {total_distance}, threshold = {self.total_path_length}")
+        #     return True
         if lat_error > 3:
             print(f"Early termination: Lateral error exceeded threshold. lat_error = {lat_error}, threshold = 3")
             return True
