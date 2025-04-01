@@ -18,7 +18,7 @@ SEED = 123
 SECONDS_PER_EPISODE = 100
 
 class CargoBalancingEnv(gym.Env):
-    def __init__(self, xml_file="./rover_scaled.xml", waypoint_file="./curve_line_waypoints.csv", render_mode=None):
+    def __init__(self, xml_file="./rover_scaled.xml", waypoint_file="./new_curve_waypoints.csv", render_mode=None):
         super(CargoBalancingEnv, self).__init__()
         
         # Load MuJoCo model from XML file
@@ -49,8 +49,8 @@ class CargoBalancingEnv(gym.Env):
         #vehicle initial pose
         self.initial_x = -1.04390184e-05
         self.initial_y = -8.56218164e-09
-        self.initial_vx = -3.71728527e-14
-        self.initial_vy = 1.41909649e-16
+        self.initial_vx = 0 #-3.71728527e-14
+        self.initial_vy = 0 #1.41909649e-16
         #cargo initial pose
         self.initial_cx = 1.05120351e-05
         self.initial_cy = -5.81037754e-10 
@@ -62,6 +62,7 @@ class CargoBalancingEnv(gym.Env):
         self.min_speed = 5
         self.target_speed = 15
         self.max_speed = 20
+        self.max_angle_deviation = np.cos(np.deg2rad(75))
         self.max_std = 0.4
         self.max_cstd = 0.04
         self.distance_from_center_history = queue.Queue(maxsize=100)
@@ -160,8 +161,8 @@ class CargoBalancingEnv(gym.Env):
         self.state[7] = self.data.qpos[18]  # Cargo position in Z axis
 
         self.state_history.append(self.state)
-
-        test_point = (self.state[0], self.state[1])
+ 
+        test_point = (self.state[0], self.state[1]) 
         _, lateral_distance, closest_point, heading, remaining_path_length = self.shortest_distance_to_spline(test_point)
         # lookahead, target_heading, lookahead_distance,
         vehicle_heading = self.state[2]
@@ -198,21 +199,35 @@ class CargoBalancingEnv(gym.Env):
         reward = 0
         
         #Check Early Termination
-        if not self.early_terminal_state(lat_error, remaining_path_length):
-            reward += self.reward_fn(centering_factor,angle_factor,sdf,c_stdf,total_distance_factor)
-        else:
-            self.terminal_state = True
-            reward += penalty
-            print("Vehicle reached early termination")
+        # if not self.early_terminal_state(lat_error, remaining_path_length):
+        #     reward += self.reward_fn(centering_factor,angle_factor,sdf,c_stdf,total_distance_factor)
+        # else:
+        #     self.terminal_state = True
+        #     reward += penalty
+        #     print("Vehicle reached early termination")
 
-        #Start Checking for completion if vehicle crossed first waypoint
-        start_x = self.waypoints[:, 0]
-        #print(np.shape(start_x))
-        if self.state[0] > start_x[0]:
-            lookahead_distance, target_heading, lookahead = self.lookahead(test_point)
-            if all(v is None for v in [lookahead, target_heading, lookahead_distance]):
-                self.success_state = True
-                print("Vehicle reached goal")
+        # #Start Checking for completion if vehicle crossed first waypoint
+        # start_x = self.waypoints[:, 0]
+        # #print(np.shape(start_x))
+        # if self.state[0] > start_x[0]: 
+        #     lookahead_distance, target_heading, lookahead = self.lookahead(test_point)
+        #     if all(v is None for v in [lookahead, target_heading, lookahead_distance]):
+        #         self.success_state = True
+        #         print("Vehicle reached goal")
+
+        lookahead_distance, target_heading, lookahead = self.lookahead(test_point)
+        if all(v is not None for v in [lookahead, target_heading, lookahead_distance]):
+            #Check early termination
+            if not self.early_terminal_state(lat_error, remaining_path_length):
+                reward +=self.lookahead_reward(centering_factor,angle_factor,sdf,c_stdf,total_distance_factor)
+            else:
+                self.terminal_state = True
+                reward += penalty
+                print("Vehicle reached early termination")
+        else:
+            self.success_state = True
+            print("Vehicle reached goal")
+
 
         #Check truncation for taking too long
         if self.episode_start + SECONDS_PER_EPISODE < time.monotonic():
@@ -259,6 +274,7 @@ class CargoBalancingEnv(gym.Env):
         self.terminal_state = False
         self.success_state = False
         self.truncated = False
+        self.low_velocity_start = None
         # self.state_history = []
         self.state = np.array(self.state, dtype=np.float32)
         
@@ -304,21 +320,75 @@ class CargoBalancingEnv(gym.Env):
 
         return reward
     
+    def lookahead_reward(self, centering_factor, angle_factor, sdf, c_stdf, total_distance_factor):
+        test_point = (self.state[0], self.state[1])        
+        lookahead_distance, target_heading, lookahead = self.lookahead(test_point)
+        _, lateral_distance, closest_point, heading, remaining_path_length = self.shortest_distance_to_spline(test_point)
+        
+
+        #Speed reward
+        velocity_angle = np.arctan2(self.state[4], self.state[3])
+        velocity_vector = np.cos(velocity_angle)
+        speed = np.linalg.norm([self.state[3], self.state[4]])
+        vehicle_inclination_preview = np.cos(velocity_angle - target_heading)
+        vehicle_incliation_current = np.cos(velocity_angle - heading)
+        velocity = np.sign(velocity_vector) * speed
+        min_speed = self.min_speed
+        target_speed = self.target_speed
+        max_speed = self.max_speed
+        max_angle_deviation = self.max_angle_deviation
+        if velocity < min_speed:
+            speed_reward = velocity/min_speed
+        elif velocity > self.target_speed:
+            speed_reward = 1.0 - (speed-target_speed)/(max_speed - target_speed)
+        else:
+            speed_reward = 1.0
+        
+        #Vehicle Velocity Inclination reward
+        inclination_reward = vehicle_inclination_preview
+
+        inclination_error = 1 - inclination_reward
+        inclination_importance = inclination_error ** 2 
+        speed_importance = 1 - inclination_importance
+        total_weight = inclination_importance + speed_importance
+        inclination_importance /= total_weight
+        speed_importance /= total_weight
+
+
+        reward = (speed_importance * speed_reward + inclination_importance * inclination_reward) * \
+         centering_factor * angle_factor * sdf * c_stdf * total_distance_factor
+
+        return reward
+
     def early_terminal_state(self, lat_error, remaining_path_length):
 
+        # self.episode_start + SECONDS_PER_EPISODE < time.monotonic()
+        current_time = time.monotonic()
+        speed = np.linalg.norm([self.state[3], self.state[4]])
+        velocity_vector = np.cos(np.arctan2(self.state[4], self.state[3]))
+        velocity = np.sign(velocity_vector) * speed
         total_distance = remaining_path_length + lat_error
 
+        if velocity < self.min_speed:
+            if self.low_velocity_start is None:
+                self.low_velocity_start = current_time
+            elif current_time - self.low_velocity_start >= 10:
+                print(f"Early termination: Vehicle not gaining speed. Velocity: {velocity}")    
+                return True
+        else:
+            self.low_velocity_start = None
+
         if self.state[7] < 1:
-            print(f"Early termination: Vehicle height dropped below initial level. Cargo_z = {self.state[7]}, initial_cz = {self.initial_cz}")
+            print(f"Early termination: Cargo height dropped below initial level. Cargo_z = {self.state[7]}, initial_cz = {self.initial_cz}")
             return True
-        if self.state[3] < -1:
-            print(f"Early termination: Vehicle moving in reverse. V_x = {self.state[3]}")
-            return True
+        # if self.state[3] < -1:
+        #     print(f"Early termination: Vehicle moving in reverse. V_x = {self.state[3]}")
+        #     return True
         # if total_distance > (self.total_path_length + 1):
         #     print(f"Early termination: Total distance exceeded threshold. total_distance = {total_distance}, threshold = {self.total_path_length}")
         #     return True
-        if lat_error > 3:
-            print(f"Early termination: Lateral error exceeded threshold. lat_error = {lat_error}, threshold = 3")
+        if lat_error > 5:
+            print(f"Early termination: Lateral error exceeded threshold. lat_error = {lat_error}, threshold = 5")
             return True
         return False
 

@@ -9,7 +9,7 @@ class VehicleController:
         # Generate random waypoints
         np.random.seed(42)  # For reproducibility
         #self.waypoints = np.cumsum(np.random.rand(20, 2) * 5, axis=0)
-        waypoint_file="./s_shaped_waypoints.csv"
+        waypoint_file="./new_curve_waypoints.csv"
         waypoints_df = pd.read_csv(waypoint_file)
         self.waypoints = waypoints_df[['x', 'y']].to_numpy()
 
