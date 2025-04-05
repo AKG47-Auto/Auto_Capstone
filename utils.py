@@ -14,6 +14,7 @@ class CustomTensorBoardCallback(BaseCallback):
             self.writer.add_scalar("custom/total_reward", self.locals['infos'][0]['total_reward'], self.num_timesteps)
             self.writer.add_scalar("custom/avg_speed", self.locals['infos'][0]['avg_speed'], self.num_timesteps)
             self.writer.add_scalar("custom/mean_reward", self.locals['infos'][0]['mean_reward'], self.num_timesteps)
+            self.writer.add_scalar("custom/distance_covered", self.locals['infos'][0]['distance_covered'], self.num_timesteps)
 
         return True
     

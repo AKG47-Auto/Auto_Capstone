@@ -4,8 +4,19 @@ import time
 import numpy as np
 
 # Load the MuJoCo model
-model = mujoco.MjModel.from_xml_path("rover_scaled.xml")  # Replace with your model file
+model = mujoco.MjModel.from_xml_path("car.xml")  # Replace with your model file
 data = mujoco.MjData(model)
+
+# Print mass of each body
+print("=== Body Masses ===")
+for i in range(model.nbody):
+    name = model.body(i).name
+    mass = model.body_mass[i]
+    print(f"Body '{name}': mass = {mass:.4f} kg")
+
+# Print total mass
+total_mass = np.sum(model.body_mass)
+print(f"Total model mass: {total_mass:.4f} kg\n")
 
 # Create a viewer (optional, for visualization)
 with mujoco.viewer.launch_passive(model, data) as viewer:

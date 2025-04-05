@@ -1,9 +1,9 @@
-from stable_baselines3 import PPO #PPO
+from stable_baselines3 import PPO 
 from stable_baselines3.common.env_util import DummyVecEnv
 from stable_baselines3.common.callbacks import BaseCallback
 from utils import CustomTensorBoardCallback 
 import os
-from SB3_RL_Training import CargoBalancingEnv
+from new_car_training import CargoBalancingEnv
 import time
 
 SEED = 123
@@ -21,7 +21,7 @@ if not os.path.exists(logdir):
 
 print('connecting to env..')
 #org_env = CargoBalancingEnv(xml_file="./rover_scaled.xml", waypoint_file="./straight_line_waypoints.csv", render_mode="human", logdir=logdir)
-org_env =  CargoBalancingEnv("./rover_scaled.xml", render_mode="human")
+org_env =  CargoBalancingEnv("./car.xml", render_mode="human")
 env = DummyVecEnv([lambda: org_env])
 
 env.reset()
