@@ -8,11 +8,11 @@ from stable_baselines3.common.env_util import DummyVecEnv
 from new_car_training import CargoBalancingEnv
 
 #Load and test trained model
-model_path = "./models/1743885570/2500000"  # Modify this to the correct path
+model_path = "./models/1743900579/2500000"  # Modify this to the correct path
 # Load the trained PPO model
 model = PPO.load(model_path)
 
-org_env =  CargoBalancingEnv(xml_file="./car.xml", waypoint_file="./curve_line_waypoints.csv", render_mode="human")
+org_env =  CargoBalancingEnv(xml_file="./car.xml", waypoint_file="./new_curve_waypoints.csv", render_mode="human")
 vec_env = DummyVecEnv([lambda: org_env])
 obs = vec_env.reset()
 org_env.render()

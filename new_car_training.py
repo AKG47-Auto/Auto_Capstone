@@ -61,9 +61,9 @@ class CargoBalancingEnv(gym.Env):
         self.total_distance_covered = 0.0
         self.prev_position = None
         
-        self.min_speed = 5
-        self.target_speed = 15
-        self.max_speed = 20
+        self.min_speed = 0.5
+        self.target_speed = 2
+        self.max_speed = 4
         self.max_angle_deviation = np.cos(np.deg2rad(75))
         self.max_std = 0.4
         self.max_cstd = 0.04
