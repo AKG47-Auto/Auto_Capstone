@@ -369,17 +369,27 @@ class CarlaRouteEnv(gym.Env):
 
         # Lookahead preview for curvature estimation
         lookahead = 5  # number of waypoints ahead to preview
-        if self.current_waypoint_index + lookahead < len(self.route_waypoints):
-            preview_points = []
+        end_index = min(self.current_waypoint_index + lookahead, len(self.route_waypoints))
+        preview_points = []
 
-            for i in range(lookahead):
-                idx = (self.current_waypoint_index + i) % len(self.route_waypoints)
-                wp, _ = self.route_waypoints[idx]
-                loc = wp.transform.location
-                preview_points.append(np.array([loc.x, loc.y]))
-            self.preview_points = preview_points
-        else:
-            self.preview_points = []  # Save it for use in reward_fn
+        for i in range(self.current_waypoint_index, end_index):
+            wp, _ = self.route_waypoints[i]
+            loc = wp.transform.location
+            preview_points.append(np.array([loc.x, loc.y]))
+
+        self.preview_points = preview_points
+        
+        # if self.current_waypoint_index + lookahead < len(self.route_waypoints):
+        #     preview_points = []
+
+        #     for i in range(lookahead):
+        #         idx = (self.current_waypoint_index + i) % len(self.route_waypoints)
+        #         wp, _ = self.route_waypoints[idx]
+        #         loc = wp.transform.location
+        #         preview_points.append(np.array([loc.x, loc.y]))
+        #     self.preview_points = preview_points
+        # else:
+        #     self.preview_points = []  # Save it for use in reward_fn
 
         # Check for route completion
         if self.current_waypoint_index < len(self.route_waypoints) - 1:

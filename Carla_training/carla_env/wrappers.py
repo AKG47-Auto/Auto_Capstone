@@ -435,6 +435,16 @@ class Vehicle(CarlaActorBase):
             beta_deg = -180 - beta_deg
 
         return beta_deg 
+    
+    def compute_target_speed_from_preview_angle(self, theta_preview, v_max=20.0, v_min=6.0, theta_max=np.radians(45), p=2.0):
+        """
+        Computes target speed with a minimum velocity floor.
+        """
+        theta_norm = abs(theta_preview) / theta_max
+        theta_norm = np.clip(theta_norm, 0, 1)
+        speed_fraction = (1 - theta_norm**p)
+        v_target = v_min + (v_max - v_min) * speed_fraction
+        return v_target
 
 
 
